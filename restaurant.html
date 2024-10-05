@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>restaurant page</title>
+</head>
+<body>
+    <h3>Welcome restaurant</h3>
+    <a href="login.html" id="logout">Logout</a>
+
+    <script>
+        function logoutUser(event) {
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+        }
+        //this is logout user when token //
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            alert("no token")
+            window.location.href = "login.html"; // Redirect to login if no token
+        } else {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "http://localhost:5000/restaurant_Owner-protected", true); // get the protection 
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        alert("Welcome restaurant");
+                    } else {
+                        alert("Unauthorized access. Redirecting to login.");
+                        window.location.href = "login.html"; // Redirect to login if unauthorized
+                    }
+                }
+            };
+
+            xhr.send();
+        }
+
+        const logout = document.getElementById("logout");
+        logout.addEventListener("click", logoutUser);
+
+        // Additional check to prevent admins from accessing customer.html
+      
+    </script>
+</body>
+</html>

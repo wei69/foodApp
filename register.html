@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Page</title>
+    <style>
+        form {
+            border: 3px solid #f1f1f1;
+            padding: 20px;
+            margin: 20px;
+            max-width: 300px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #04AA6D;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            padding: 5px;
+        }
+
+        .strength {
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        .weak {
+            color: red;
+        }
+
+        .medium {
+            color: orange;
+        }
+
+        .strong {
+            color: green;
+        }
+
+        span.psw {
+            float: right;
+            padding-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <form id="registerForm">
+        <div class="container">
+            <label for="uname"><b>Name</b></label>
+            <input id="uname" type="text" placeholder="Enter Name" required>
+
+            <label for="psw"><b>Password</b></label>
+            <input id="psw" type="password" placeholder="Enter Password" required>
+            <div id="strengthMessage" class="strength"></div>
+
+            <label for="email"><b>Email</b></label>
+            <input id="email" type="email" placeholder="Enter Email" required>
+
+            <label for="role"><b>Role</b></label>
+            <select name="role" id="role">
+                <option value="customer">Customer</option>
+                <option value="delivery_driver">Delivery Driver</option>
+                <option value="restaurant_owner">Restaurant Owner</option>
+                <option value="admin">Admin</option>
+            </select>
+            <button type="submit">Register</button>
+        </div>
+        <div class="container" style="background-color: #f1f1f1;">
+            <span class="psw"><a href="login.html">Login</a></span>
+        </div>
+    </form>
+
+    <script>
+        const form = document.getElementById("registerForm");
+        const passwordInput = document.getElementById("psw");
+        const strengthMessage = document.getElementById("strengthMessage");
+
+        passwordInput.addEventListener('input', updatePasswordStrength);
+
+        form.addEventListener("submit", processForm);
+
+        function processForm(event) {
+            event.preventDefault();
+            const uname = document.getElementById("uname").value;
+            const psw = document.getElementById("psw").value;
+            const email = document.getElementById('email').value;
+            const role = document.getElementById('role').value;
+
+
+            if (psw.length < 8) {
+        alert("Password must be at least 8 characters long.");
+        return;
+      
+            }
+            var data = JSON.stringify({
+                "name": uname,
+                "password": psw,
+                "email": email
+            });
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "http://localhost:5000/register-" + role, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    console.log(this.responseText);
+                    var response = JSON.parse(this.responseText);
+                    alert(response.message);
+                    window.location.href = "login.html";
+                }
+            };
+
+            xhr.send(data);
+        }
+
+        function updatePasswordStrength() {
+            const password = passwordInput.value;
+            let strength = "Weak";
+            let className = "weak";
+
+            if (password.length >= 8) {
+                if (/[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password) && /[\W_]/.test(password)) {
+                    strength = "Strong";
+                    className = "strong";
+                } else if (/[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password)) {
+                    strength = "Medium";
+                    className = "medium";
+                }
+                
+            }
+
+            strengthMessage.textContent = `Password strength: ${strength}`;
+            strengthMessage.className = `strength ${className}`;
+        }
+    </script>
+</body>
+</html>

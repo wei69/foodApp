@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver page</title>
+</head>
+<body>
+    <h3>Welcome driver</h3>
+    <a href="login.html" id="logout">Logout</a>
+
+    <script>
+        function logoutUser(event) {
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+        }
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            window.location.href = "login.html";
+            alert("no token") // Redirect to login if no token
+        } else {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "http://localhost:5000/delivery_Driver-protected", true);
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        alert("Welcome driver");
+                    } else {
+                        alert("Unauthorized access. Redirecting to login.");
+                        window.location.href = "login.html"; // Redirect to login if unauthorized
+                    }
+                }
+            };
+
+            xhr.send();
+        }
+
+        const logout = document.getElementById("logout");
+        logout.addEventListener("click", logoutUser);
+
+        // Additional check to prevent admins from accessing customer.html
+      
+    </script>
+</body>
+</html>

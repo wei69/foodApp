@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Page</title>
+</head>
+<body>
+    <h3>Welcome Customer</h3>
+    <a href="login.html" id="logout">Logout</a>
+
+    <script>
+        function logoutUser(event) {
+            event.preventDefault(); // Prevent default anchor behavior
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+        }
+
+        function checkTokenValidity() {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "login.html"; 
+                alert("No token. Please login.");
+                return;
+            }
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("Post", "http://localhost:5000/verify-otp", true);
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        alert("Welcome customer");
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        document.getElementById("logout").addEventListener("click", logoutUser);
+
+        // Check token validity when the page loads
+        checkTokenValidity();
+    </script>
+</body>
+</html>

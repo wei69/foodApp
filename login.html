@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <style>
+        form {
+            border: 3px solid #f1f1f1;
+            padding: 20px;
+            margin: 20px;
+            max-width: 300px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #04AA6D;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            padding: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h2><a href="resetpassword.html">Reset Password</a></h2>
+    <form id="loginForm">
+        <div class="container">
+            <label for="email"><b>Email</b></label>
+            <input id="email" type="email" placeholder="Enter Email" required>
+            <label for="uname"><b>Name</b></label>
+            <input id="uname" type="text" placeholder="Enter Name" required>
+
+            <label for="psw"><b>Password</b></label>
+            <input id="psw" type="password" placeholder="Enter Password" required>
+
+            <label for="role"><b>Role</b></label>
+            <select name="role" id="role">
+                <option value="customer">Customer</option>
+                <option value="delivery_driver">Delivery Driver</option>
+                <option value="restaurant_owner">Restaurant Owner</option>
+                <option value="admin">Admin</option>
+            </select>
+            <button type="submit">Login</button>
+        </div>
+        <div class="container" style="background-color: #f1f1f1;">
+            <span class="psw"><a href="register.html">Register</a></span>
+        </div>
+    </form>
+
+    <!-- OTP Verification Form -->
+    <form id="otpForm" class="hidden">
+        <div class="container">
+            <label for="otp"><b>Enter OTP</b></label>
+            <input id="otp" type="text" placeholder="Enter OTP" required>
+            <button type="submit">Verify OTP</button>
+        </div>
+    </form>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const otpForm = document.getElementById('otpForm');
+
+        // Initialize login attempts from localStorage
+        if (!localStorage.getItem('loginAttempts')) {
+            localStorage.setItem('loginAttempts', JSON.stringify({ attempts: 0, lockoutUntil: 0 }));
+        }
+
+        loginForm.addEventListener('submit', processLogin);
+        otpForm.addEventListener('submit', verifyOtp);
+
+        function processLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById("email").value;
+            const uname = document.getElementById("uname").value;
+            const psw = document.getElementById("psw").value;
+            const role = document.getElementById('role').value;
+
+            const attemptsData = JSON.parse(localStorage.getItem('loginAttempts'));
+
+            // Check if account is locked
+            if (attemptsData.lockoutUntil > Date.now()) {
+                const remainingTime = Math.ceil((attemptsData.lockoutUntil - Date.now()) / 1000);
+                return alert(`Account locked. Try again in ${remainingTime} seconds.`);
+            }
+
+            const data = JSON.stringify({
+                email: email,
+                name: uname,
+                password: psw,
+                role: role
+            });
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", `http://localhost:5000/login-${role}`, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    try {
+                        var response = JSON.parse(this.responseText);
+                        if (this.status === 200) {
+                            alert(response.message);
+                            // Store email in a hidden field for OTP verification
+                            document.getElementById('otpForm').dataset.email = email;
+                            // Call server to send OTP
+                            sendOtp(email);
+
+                            // Reset login attempts on successful login
+                            localStorage.setItem('loginAttempts', JSON.stringify({ attempts: 0, lockoutUntil: 0 }));
+                        } else {
+                            alert(response.message);
+                            handleFailedLogin(email);
+                        }
+                    } catch (error) {
+                        console.error("Error parsing response:", error);
+                        alert("An unexpected error occurred.");
+                    }
+                }
+            };
+
+            xhr.send(data);
+        }
+
+        function handleFailedLogin(email) {
+            let attemptsData = JSON.parse(localStorage.getItem('loginAttempts'));
+            attemptsData.attempts += 1;
+
+            if (attemptsData.attempts >= 5) {
+                attemptsData.lockoutUntil = Date.now() + 1 * 60 * 1000; // Lock out for 1 minute
+                alert('Too many failed login attempts. Your account is locked for 1 minute.');
+            }
+
+            localStorage.setItem('loginAttempts', JSON.stringify(attemptsData));
+        }
+
+        function sendOtp(email) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "http://localhost:5000/send-otp", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    try {
+                        var response = JSON.parse(this.responseText);
+                        if (this.status === 200) {
+                            alert(response.message);
+                            localStorage.setItem("token", response.token); // Store token if required
+                            loginForm.classList.add('hidden');
+                            otpForm.classList.remove('hidden');
+                        } else {
+                            alert(response.message);
+                        }
+                    } catch (error) {
+                        console.error("Error parsing response:", error);
+                        alert("An unexpected error occurred.");
+                    }
+                }
+            };
+
+            xhr.send(JSON.stringify({ email: email }));
+        }
+
+        function verifyOtp(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('otpForm').dataset.email;
+            const otp = document.getElementById("otp").value.trim();
+
+            const data = JSON.stringify({
+                email: email,
+                otp: otp
+            });
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "http://localhost:5000/verify-otp", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    try {
+                        var response = JSON.parse(this.responseText);
+                        if (this.status === 200) {
+                            // Assuming the response contains a token
+                            localStorage.setItem("token", response.token);   // Store token in localStorage
+                            
+                            alert(response.message);
+                            // Redirect based on role after successful OTP verification
+                            const role = document.getElementById('role').value;
+                            if (role === "customer") {
+                                window.location.href = "customer.html";
+                            } else if (role === "delivery_driver") {
+                                window.location.href = "driver.html";
+                            } else if (role === "restaurant_owner") {
+                                window.location.href = "restaurant.html";
+                            } else if (role === "admin") {
+                                window.location.href = "admin.html";
+                            }
+                        } else {
+                            alert(response.message);
+                        }
+                    } catch (error) {
+                        console.error("Error parsing response:", error);
+                        alert("An unexpected error occurred.");
+                    }
+                }
+            };
+
+            xhr.send(data);
+        }
+    </script>
+</body>
+</html>
